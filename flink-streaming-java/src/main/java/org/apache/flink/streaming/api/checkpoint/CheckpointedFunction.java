@@ -26,16 +26,14 @@ import org.apache.flink.runtime.state.FunctionInitializationContext;
 import org.apache.flink.runtime.state.FunctionSnapshotContext;
 
 /**
- * This is the core interface for <i>stateful transformation functions</i>, meaning functions that
- * maintain state across individual stream records. While more lightweight interfaces exist as
- * shortcuts for various types of state, this interface offer the greatest flexibility in managing
- * both <i>keyed state</i> and <i>operator state</i>.
+ * 这是<i>状态转换函数</i>的核心接口，意味着函数跨单个流记录维护状态。 虽然存在更多轻量级接口各种状态的快捷方式，
+ * 该界面提供了最大的管理灵活性包括<i>keyed state</i> 和 <i>operator state</i>.
  *
  * <p>The section <a href="#shortcuts">Shortcuts</a> illustrates the common lightweight ways to
  * setup stateful functions typically used instead of the full fledged abstraction represented by
  * this interface.
  *
- * <h1>Initialization</h1>
+ * <h1>初始化</h1>
  *
  * <p>The {@link CheckpointedFunction#initializeState(FunctionInitializationContext)} is called when
  * the parallel instance of the transformation function is created during distributed execution. The
