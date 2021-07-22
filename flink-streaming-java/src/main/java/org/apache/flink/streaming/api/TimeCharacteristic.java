@@ -23,77 +23,34 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 
 /**
- * The time characteristic defines how the system determines time for time-dependent order and
- * operations that depend on time (such as time windows).
- *
- * @deprecated In Flink 1.12 the default stream time characteristic has been changed to {@link
- *     TimeCharacteristic#EventTime}, thus you don't need to call this method for enabling
- *     event-time support anymore. Explicitly using processing-time windows and timers works in
- *     event-time mode. If you need to disable watermarks, please use {@link
- *     ExecutionConfig#setAutoWatermarkInterval(long)}. If you are using {@link
- *     TimeCharacteristic#IngestionTime}, please manually set an appropriate {@link
- *     WatermarkStrategy}. If you are using generic "time window" operations (for example {@link
- *     org.apache.flink.streaming.api.datastream.KeyedStream#timeWindow(org.apache.flink.streaming.api.windowing.time.Time)}
- *     that change behaviour based on the time characteristic, please use equivalent operations that
- *     explicitly specify processing time or event time.
+ * 时间特性定义了系统如何为依赖时间的订单和依赖时间的操作确定时间
+ * 在flink版本1.12中已弃用
  */
 @PublicEvolving
 @Deprecated
 public enum TimeCharacteristic {
 
     /**
-     * Processing time for operators means that the operator uses the system clock of the machine to
-     * determine the current time of the data stream. Processing-time windows trigger based on
-     * wall-clock time and include whatever elements happen to have arrived at the operator at that
-     * point in time.
+     *  处理时间指消息被计算引擎处理的时间
+     *  例如，在物理节点1处理时，处理时间（即当前系统时间）为2019-02-05 12∶00∶00，然后交给下游的计算节点进程处理，
+     *  此时的处理时间（即当前系统时间）为2019-02-05 12∶00∶01。可以看到处理时间是在不停变化的。
+     *  使用处理时间依赖于操作系统的时钟，重复执行基于窗口的统计作业，结果可能是不同的。
+     *  处理时间的计算逻辑非常简单，性能好于事件时间，延迟低于事件时间，只需要获取当前系统的时间戳即可。
      *
-     * <p>Using processing time for window operations results in general in quite non-deterministic
-     * results, because the contents of the windows depends on the speed in which elements arrive.
-     * It is, however, the cheapest method of forming windows and the method that introduces the
-     * least latency.
-     */
-    ProcessingTime,
-
+     *  */
+     ProcessingTime,
     /**
-     * Ingestion time means that the time of each individual element in the stream is determined
-     * when the element enters the Flink streaming data flow. Operations like windows group the
-     * elements based on that time, meaning that processing speed within the streaming dataflow does
-     * not affect windowing, but only the speed at which sources receive elements.
-     *
-     * <p>Ingestion time is often a good compromise between processing time and event time. It does
-     * not need any special manual form of watermark generation, and events are typically not too
-     * much out-or-order when they arrive at operators; in fact, out-of-orderness can only be
-     * introduced by streaming shuffles or split/join/union operations. The fact that elements are
-     * not very much out-of-order means that the latency increase is moderate, compared to event
-     * time.
+     * 摄取时间指事件进入流处理系统的时间，对于与一个事件来说，使用其被读取的那一刻的时间戳作作为摄取时间。
+     * 摄取时间一般使用得较少，从处理机制上来说，其类似于事件时间，在作业异常重启执行的时候，也无法避免使用处理时间的结果不准确的问题。
+     * 一般来说，若在数据记录中没有记录时间，又想使用事件时间机制来处理记录，会选择使用摄取时间。
      */
     IngestionTime,
 
     /**
-     * Event time means that the time of each individual element in the stream (also called event)
-     * is determined by the event's individual custom timestamp. These timestamps either exist in
-     * the elements from before they entered the Flink streaming dataflow, or are user-assigned at
-     * the sources. The big implication of this is that it allows for elements to arrive in the
-     * sources and in all operators out of order, meaning that elements with earlier timestamps may
-     * arrive after elements with later timestamps.
-     *
-     * <p>Operators that window or order data with respect to event time must buffer data until they
-     * can be sure that all timestamps for a certain time interval have been received. This is
-     * handled by the so called "time watermarks".
-     *
-     * <p>Operations based on event time are very predictable - the result of windowing operations
-     * is typically identical no matter when the window is executed and how fast the streams
-     * operate. At the same time, the buffering and tracking of event time is also costlier than
-     * operating with processing time, and typically also introduces more latency. The amount of
-     * extra cost depends mostly on how much out of order the elements arrive, i.e., how long the
-     * time span between the arrival of early and late elements is. With respect to the "time
-     * watermarks", this means that the cost typically depends on how early or late the watermarks
-     * can be generated for their timestamp.
-     *
-     * <p>In relation to {@link #IngestionTime}, the event time is similar, but refers the the
-     * event's original time, rather than the time assigned at the data source. Practically, that
-     * means that event time has generally more meaning, but also that it takes longer to determine
-     * that all elements for a certain time have arrived.
+     * 事件时间指事件发生时的时间，一旦确定之后再也不会改变。
+     * 例如，事件被记录在日志文件中，日志中记录的时间戳就是事件时间。
+     * 通过事件时间能够还原出来事件发生的顺序。使用事件时间的好处是不依赖操作系统的时钟，无论执行多少次，
+     * 可以保证计算结果是一样的，但计算逻辑稍微复杂，需要从每一条记录中提取时间戳。
      */
     EventTime
 }
