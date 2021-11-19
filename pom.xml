@@ -11,6 +11,7 @@
     <modules>
         <module>flink-core</module>
         <module>flink-streaming-java</module>
+        <module>flink-wordcount</module>
     </modules>
 
 
